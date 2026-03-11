@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900;
+}
+
+.container-page {
+  @apply max-w-6xl mx-auto px-4 py-6;
+}
+
+.card {
+  @apply bg-white rounded-lg shadow-sm border border-slate-200 p-4;
+}
+
+.sidebar {
+  @apply w-64 bg-white border-r border-slate-200 min-h-screen p-4;
+}
+
+.sidebar a {
+  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100;
+}
+
+.sidebar .active {
+  @apply bg-slate-900 text-white;
+}

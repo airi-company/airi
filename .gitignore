@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .env
 config.json
+node_modules/
+frontend/.next/
