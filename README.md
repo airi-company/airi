@@ -12,7 +12,7 @@ A simulated company run by AI agents with a dashboard (Next.js) and FastAPI back
 ## Architecture
 - Python, modular agents
 - In-memory task queue and message bus for agent communication
-- LLM router (DeepSeek, Groq, HF) with fallback
+- LLM router (Groq, HF) with fallback
 - FastAPI backend exposing agent/task/log endpoints
 - Next.js (TS) + Tailwind + shadcn/ui dashboard
 - GitHub integration stub (token-based, pluggable)
@@ -36,7 +36,6 @@ cd airi
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -q -e .  # or: pip install -r <(python -m pip list?)
-export DEEPSEEK_API_KEY=...
 export GROQ_API_KEY=...
 export HF_API_KEY=...
 python -m airi.api   # serves FastAPI on :8000
@@ -67,5 +66,5 @@ Set `NEXT_PUBLIC_API_BASE` to point to the FastAPI host (default `http://localho
 - `GET /dashboard`
 
 ## Notes
-- LLM keys pulled from env: `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `HF_API_KEY`.
+- LLM keys pulled from env: `GROQ_API_KEY`, `HF_API_KEY`.
 - GitHub token (optional) via `config.json` (see `config.example.json`).
