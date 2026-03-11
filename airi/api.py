@@ -3,6 +3,8 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 from typing import Dict, List, Optional
+import requests
+import os
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +32,9 @@ _task_counter = 0
 tasks_state: List[Dict] = []
 # projects
 _project_counter = 0
-projects: List[Dict] = []  # {id, name, description, status}
+projects: List[Dict] = []  # {id, name, description, status, repo_url}
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+GITHUB_ORG = os.environ.get("GITHUB_ORG", "airi-company")
 
 
 class AgentState(BaseModel):
@@ -51,6 +55,7 @@ class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = ""
     status: Optional[str] = "active"
+    create_repo: bool = True
 
 
 agents: Dict[str, Dict] = {}
@@ -133,14 +138,38 @@ def _process_queue():
     # end while
 
 
+def _create_repo(project_name: str) -> Optional[str]:
+    if not GITHUB_TOKEN or not GITHUB_ORG:
+        return None
+    repo_name = project_name.lower().replace(" ", "-")
+    url = f"https://api.github.com/orgs/{GITHUB_ORG}/repos"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+    }
+    payload = {"name": repo_name, "private": False}
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=15)
+        if resp.status_code in (200, 201):
+            return resp.json().get("html_url")
+        if resp.status_code == 422:
+            # already exists
+            return f"https://github.com/{GITHUB_ORG}/{repo_name}"
+        return None
+    except Exception:
+        return None
+
+
 def _add_project(project: ProjectCreate) -> Dict:
     global _project_counter
     _project_counter += 1
+    repo_url = _create_repo(project.name) if project.create_repo else None
     rec = {
         "id": _project_counter,
         "name": project.name,
         "description": project.description,
         "status": project.status or "active",
+        "repo_url": repo_url,
     }
     projects.append(rec)
     return rec
