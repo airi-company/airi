@@ -8,6 +8,7 @@ class Task(BaseModel):
     type: str
     payload: dict[str, Any] = {}
     assignee: Optional[str] = None  # agent name
+    project_id: Optional[int] = None
 
 
 class Message(BaseModel):

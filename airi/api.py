@@ -26,8 +26,11 @@ memory_dir = Path(__file__).resolve().parent.parent / "memory"
 memory_dir.mkdir(exist_ok=True)
 # task tracking
 _task_counter = 0
-# each: {id, type, assignee, payload, status, result, agent, output}
+# each: {id, type, assignee, payload, status, result, agent, output, project_id}
 tasks_state: List[Dict] = []
+# projects
+_project_counter = 0
+projects: List[Dict] = []  # {id, name, description, status}
 
 
 class AgentState(BaseModel):
@@ -41,6 +44,13 @@ class TaskCreate(BaseModel):
     type: str
     payload: dict = {}
     assignee: Optional[str] = None
+    project_id: Optional[int] = None
+
+
+class ProjectCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    status: Optional[str] = "active"
 
 
 agents: Dict[str, Dict] = {}
@@ -75,6 +85,7 @@ def _add_task_record(task: Task):
         "status": "queued",
         "result": None,
         "agent": task.assignee or task.type.capitalize(),
+        "project_id": task.project_id,
     }
     tasks_state.append(record)
     queue.add_task(_task_counter, task)
@@ -120,6 +131,19 @@ def _process_queue():
         info["last"] = task.type
         info["current"] = None
     # end while
+
+
+def _add_project(project: ProjectCreate) -> Dict:
+    global _project_counter
+    _project_counter += 1
+    rec = {
+        "id": _project_counter,
+        "name": project.name,
+        "description": project.description,
+        "status": project.status or "active",
+    }
+    projects.append(rec)
+    return rec
 
 
 _init_agents()
@@ -171,9 +195,20 @@ def get_tasks():
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
-    _add_task_record(Task(type=task.type, payload=task.payload, assignee=task.assignee))
+    _add_task_record(Task(type=task.type, payload=task.payload, assignee=task.assignee, project_id=task.project_id))
     _process_queue()
     return {"ok": True}
+
+
+@app.get("/projects")
+def get_projects():
+    return projects
+
+
+@app.post("/projects")
+def create_project(project: ProjectCreate):
+    rec = _add_project(project)
+    return rec
 
 
 @app.get("/logs")
@@ -202,6 +237,7 @@ def dashboard():
         "tasks_in_queue": len(queue.tasks),
         "llm_usage": llm_usage,
         "logs": logs[-20:],
+        "projects": len(projects),
     }
 
 
