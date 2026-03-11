@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Deque, List, Optional
+from typing import Deque, List, Optional, Tuple
 
 from airi.tasks.types import Task, Message
 
 
 class TaskQueue:
     def __init__(self):
-        self.tasks: Deque[Task] = deque()
+        # store (task_id, Task)
+        self.tasks: Deque[Tuple[int, Task]] = deque()
         self.messages: Deque[Message] = deque()
 
-    def add_task(self, task: Task) -> None:
-        self.tasks.append(task)
+    def add_task(self, task_id: int, task: Task) -> None:
+        self.tasks.append((task_id, task))
 
-    def next_task(self) -> Optional[Task]:
+    def next_task(self) -> Optional[Tuple[int, Task]]:
         if self.tasks:
             return self.tasks.popleft()
         return None

@@ -4,9 +4,13 @@ import { apiGet, apiPost } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface TaskItem {
+  id: number;
   type: string;
   payload: any;
   assignee?: string | null;
+  status?: string;
+  result?: any;
+  agent?: string;
 }
 
 export default function TasksPage() {
@@ -81,12 +85,16 @@ export default function TasksPage() {
       <div className="card">
         <div className="font-semibold mb-2">Tasks in queue</div>
         <div className="space-y-2 text-sm">
-          {tasks.length === 0 && <div className="text-slate-500">No tasks in queue.</div>}
-          {tasks.map((t, i) => (
-            <div key={i} className="border rounded px-3 py-2">
-              <div className="font-semibold">{t.type}</div>
-              <div className="text-slate-600">Assignee: {t.assignee ?? "-"}</div>
+          {tasks.length === 0 && <div className="text-slate-500">No tasks.</div>}
+          {tasks.map((t) => (
+            <div key={t.id} className="border rounded px-3 py-2">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold">#{t.id} • {t.type}</div>
+                <div className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-700">{t.status ?? "?"}</div>
+              </div>
+              <div className="text-slate-600">Assignee/Agent: {t.assignee ?? t.agent ?? "-"}</div>
               <div className="text-slate-700">Payload: {JSON.stringify(t.payload)}</div>
+              {t.result && <div className="text-slate-700">Result: {JSON.stringify(t.result)}</div>}
             </div>
           ))}
         </div>

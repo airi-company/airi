@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
 import threading
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from airi.tasks.queue import TaskQueue
@@ -24,6 +24,10 @@ logs: List[str] = []
 llm_usage: int = 0
 memory_dir = Path(__file__).resolve().parent.parent / "memory"
 memory_dir.mkdir(exist_ok=True)
+# task tracking
+_task_counter = 0
+# each: {id, type, assignee, payload, status, result, agent, output}
+tasks_state: List[Dict] = []
 
 
 class AgentState(BaseModel):
@@ -41,6 +45,7 @@ class TaskCreate(BaseModel):
 
 agents: Dict[str, Dict] = {}
 
+
 def _init_agents():
     global agents
     agents = {
@@ -52,20 +57,6 @@ def _init_agents():
     }
 
 
-_init_agents()
-app = FastAPI(title="Airi Company API")
-
-# CORS
-from fastapi.middleware.cors import CORSMiddleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
 def _append_log(msg: str):
     with log_lock:
         logs.append(msg)
@@ -73,33 +64,73 @@ def _append_log(msg: str):
             del logs[: len(logs) - 2000]
 
 
+def _add_task_record(task: Task):
+    global _task_counter
+    _task_counter += 1
+    record = {
+        "id": _task_counter,
+        "type": task.type,
+        "assignee": task.assignee,
+        "payload": task.payload,
+        "status": "queued",
+        "result": None,
+        "agent": task.assignee or task.type.capitalize(),
+    }
+    tasks_state.append(record)
+    queue.add_task(_task_counter, task)
+
+
+def _mark_task(task_id: int, status: str, result=None):
+    for t in tasks_state:
+        if t["id"] == task_id:
+            t["status"] = status
+            if result is not None:
+                t["result"] = result
+            return
+
+
 def _process_queue():
     global llm_usage
     while True:
-        task = queue.next_task()
-        if not task:
+        item = queue.next_task()
+        if not item:
             break
+        task_id, task = item
+        _mark_task(task_id, "running")
         target = task.assignee or task.type.capitalize()
         info = agents.get(target)
         if not info or info["status"] != "running":
             _append_log(f"No running agent for {target}, task {task.type} skipped")
+            _mark_task(task_id, "error", result="agent not running")
             continue
         agent = info["agent"]
         info["current"] = task.model_dump()
         _append_log(f"[{agent.config.name}] handling {task.type}: {task.payload}")
         try:
             new_tasks = agent.handle_task(task)  # type: ignore
-            # crude LLM usage counter: increment if developer used ask
             if task.type == "coding":
                 llm_usage += 1
             if new_tasks:
                 for t in new_tasks:
-                    queue.add_task(t)
+                    _add_task_record(t)
+            _mark_task(task_id, "done", result=task.payload)
         except Exception as e:
             _append_log(f"[{agent.config.name}] error: {e}")
+            _mark_task(task_id, "error", result=str(e))
         info["last"] = task.type
         info["current"] = None
     # end while
+
+
+_init_agents()
+app = FastAPI(title="Airi Company API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/agents", response_model=List[AgentState])
@@ -135,12 +166,12 @@ def stop_agent(name: str):
 
 @app.get("/tasks")
 def get_tasks():
-    return [t.model_dump() for t in list(queue.tasks)]
+    return tasks_state
 
 
 @app.post("/tasks")
 def create_task(task: TaskCreate):
-    queue.add_task(Task(type=task.type, payload=task.payload, assignee=task.assignee))
+    _add_task_record(Task(type=task.type, payload=task.payload, assignee=task.assignee))
     _process_queue()
     return {"ok": True}
 
@@ -165,15 +196,15 @@ def list_memory():
 
 @app.get("/dashboard")
 def dashboard():
+    running = len([a for a in agents.values() if a["status"] == "running"])
     return {
-        "agents": len(agents),
+        "agents": running,
         "tasks_in_queue": len(queue.tasks),
         "llm_usage": llm_usage,
         "logs": logs[-20:],
     }
 
 
-# health
 @app.get("/")
 def root():
     return {"status": "ok"}
