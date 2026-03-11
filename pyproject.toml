@@ -1,0 +1,17 @@
+[project]
+name = "airi-company"
+version = "0.1.0"
+description = "Airi Company: simulated AI-run company with modular agents and task queue"
+authors = [{ name = "Ngọc Tiến" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.6.0",
+    "rich>=13.7.0",
+    "requests>=2.31.0",
+    "groq>=0.6.0",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
