@@ -55,6 +55,16 @@ def _init_agents():
 _init_agents()
 app = FastAPI(title="Airi Company API")
 
+# CORS
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 def _append_log(msg: str):
     with log_lock:
