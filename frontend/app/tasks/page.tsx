@@ -66,15 +66,25 @@ export default function TasksPage() {
     }
   };
 
-  const grouped = useMemo(() => {
-    const g: Record<string, TaskItem[]> = { queued: [], running: [], done: [], error: [] };
+  const groupedByProject = useMemo(() => {
+    const projMap: Record<string, TaskItem[]> = {};
     tasks.forEach((t) => {
+      const pid = t.project_id ? String(t.project_id) : "none";
+      if (!projMap[pid]) projMap[pid] = [];
+      projMap[pid].push(t);
+    });
+    return projMap;
+  }, [tasks]);
+
+  const statuses = (list: TaskItem[]) => {
+    const g: Record<string, TaskItem[]> = { queued: [], running: [], done: [], error: [] };
+    list.forEach((t) => {
       const k = t.status ?? "queued";
       if (!g[k]) g[k] = [];
       g[k].push(t);
     });
     return g;
-  }, [tasks]);
+  };
 
   const projectName = (id?: number | null) => projects.find((p) => p.id === id)?.name || "-";
   const pretty = (v: any) => {
@@ -158,34 +168,45 @@ export default function TasksPage() {
         <Button onClick={submit}>Create task</Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {STATUS_COLUMNS.map((col) => (
-          <div key={col.key} className="card space-y-2">
-            <div className="font-semibold">{col.title}</div>
-            <div className="space-y-2 text-sm">
-              {(grouped[col.key] ?? []).map((t) => (
-                <button
-                  key={t.id}
-                  className="w-full text-left border rounded px-3 py-2 bg-white shadow-sm hover:shadow-md transition"
-                  onClick={() => setSelected(t)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="font-semibold">#{t.id} • {t.type}</div>
-                    <span className={statusClass(t.status)}>{t.status ?? "?"}</span>
+      <div className="space-y-6">
+        {Object.entries(groupedByProject).map(([pid, list]) => {
+          const projName = pid === "none" ? "(No project)" : projectName(Number(pid));
+          const byStatus = statuses(list);
+          return (
+            <div key={pid} className="space-y-3">
+              <div className="text-lg font-semibold">{projName}</div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {STATUS_COLUMNS.map((col) => (
+                  <div key={col.key} className="card space-y-2">
+                    <div className="font-semibold">{col.title}</div>
+                    <div className="space-y-2 text-sm">
+                      {(byStatus[col.key] ?? []).map((t) => (
+                        <button
+                          key={t.id}
+                          className="w-full text-left border rounded px-3 py-2 bg-white shadow-sm hover:shadow-md transition"
+                          onClick={() => setSelected(t)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="font-semibold">#{t.id} • {t.type}</div>
+                            <span className={statusClass(t.status)}>{t.status ?? "?"}</span>
+                          </div>
+                          <div className="text-slate-600">Agent: {t.assignee ?? t.agent ?? "-"}</div>
+                          {t.created_at && <div className="text-xs text-slate-500">{new Date(t.created_at).toLocaleString()}</div>}
+                          <div className="text-slate-700 truncate">Payload: {JSON.stringify(t.payload)}</div>
+                          {t.result && <div className="text-slate-700 truncate">Result: {JSON.stringify(t.result)}</div>}
+                        </button>
+                      ))}
+                      {(byStatus[col.key] ?? []).length === 0 && (
+                        <div className="text-slate-500">No tasks</div>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-slate-600">Agent: {t.assignee ?? t.agent ?? "-"}</div>
-                  <div className="text-slate-600">Project: {projectName(t.project_id)}</div>
-                  {t.created_at && <div className="text-xs text-slate-500">{new Date(t.created_at).toLocaleString()}</div>}
-                  <div className="text-slate-700 truncate">Payload: {JSON.stringify(t.payload)}</div>
-                  {t.result && <div className="text-slate-700 truncate">Result: {JSON.stringify(t.result)}</div>}
-                </button>
-              ))}
-              {(grouped[col.key] ?? []).length === 0 && (
-                <div className="text-slate-500">No tasks</div>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
+        {Object.keys(groupedByProject).length === 0 && <div className="text-slate-500">No tasks</div>}
       </div>
 
       {selected && (
