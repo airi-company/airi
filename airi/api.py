@@ -97,6 +97,14 @@ def _mark_task(task_id: int, status: str, result=None):
             return
 
 
+def _extract_code(payload: dict) -> Optional[str]:
+    for k in ["code", "html", "ask"]:
+        v = payload.get(k)
+        if isinstance(v, str) and len(v.strip()) > 0:
+            return v
+    return None
+
+
 def _auto_deploy(task: Task, task_id: int):
     if task.type != "coding":
         return
@@ -107,8 +115,7 @@ def _auto_deploy(task: Task, task_id: int):
         return
     repo = proj["repo_url"]
     branch = proj.get("branch") or "main"
-    # Expect payload contains code/html
-    content = task.payload.get("code") or task.payload.get("html")
+    content = _extract_code(task.payload)
     if not content:
         return
     try:
@@ -167,7 +174,6 @@ def _create_repo(project_name: str) -> Optional[str]:
         if resp.status_code in (200, 201):
             return resp.json().get("html_url")
         if resp.status_code == 422:
-            # already exists
             return f"https://github.com/{GITHUB_ORG}/{repo_name}"
         return None
     except Exception:
