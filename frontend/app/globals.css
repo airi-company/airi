@@ -4,10 +4,27 @@
 
 :root {
   color-scheme: light;
+  --bg: #f5f7fb;
+  --fg: #0f172a;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --sidebar: #ffffff;
+  --sidebar-border: #e2e8f0;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1222;
+  --fg: #e2e8f0;
+  --card: #111827;
+  --border: #1f2937;
+  --sidebar: #0f172a;
+  --sidebar-border: #1f2937;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .container-page {
@@ -15,11 +32,15 @@ body {
 }
 
 .card {
-  @apply bg-white rounded-lg shadow-sm border border-slate-200 p-4;
+  background: var(--card);
+  border: 1px solid var(--border);
+  @apply rounded-lg shadow-sm p-4;
 }
 
 .sidebar {
-  @apply w-64 bg-white border-r border-slate-200 min-h-screen p-4;
+  background: var(--sidebar);
+  border-right: 1px solid var(--sidebar-border);
+  @apply w-64 min-h-screen p-4;
 }
 
 .sidebar a {
