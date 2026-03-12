@@ -70,7 +70,12 @@ export default function ProjectsPage() {
               <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200">{p.status ?? "active"}</div>
             </div>
             <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{p.description}</div>
-            {p.repo_url && <a className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-500" href={p.repo_url} target="_blank" rel="noreferrer">🔗 Repo</a>}
+            <div className="flex flex-wrap gap-2 items-center">
+              {p.repo_url && <a className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-500" href={p.repo_url} target="_blank" rel="noreferrer">🔗 Repo</a>}
+              {p.name.toLowerCase().includes("phú quý") || p.name.toLowerCase().includes("phu quy") ? (
+                <a className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-500" href="/demo" target="_blank" rel="noreferrer">🎯 Demo</a>
+              ) : null}
+            </div>
             <div className="text-xs text-slate-500">ID: {p.id}</div>
           </div>
         ))}
