@@ -4,27 +4,32 @@
 
 :root {
   color-scheme: light;
-  --bg: #f5f7fb;
+  --bg: radial-gradient(circle at 10% 20%, #eef2ff 0, #f8fafc 40%, #f4f9ff 100%);
   --fg: #0f172a;
-  --card: #ffffff;
+  --card: #ffffffcc;
   --border: #e2e8f0;
-  --sidebar: #ffffff;
-  --sidebar-border: #e2e8f0;
+  --sidebar: #0f172a;
+  --sidebar-border: #1f2937;
+  --accent: #6366f1;
+  --accent-2: #06b6d4;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0b1222;
+  --bg: radial-gradient(circle at 20% 20%, #0f172a, #0b1222 40%, #070a14 100%);
   --fg: #e2e8f0;
-  --card: #111827;
+  --card: #0f172acc;
   --border: #1f2937;
-  --sidebar: #0f172a;
-  --sidebar-border: #1f2937;
+  --sidebar: #0b1222;
+  --sidebar-border: #111827;
+  --accent: #8b5cf6;
+  --accent-2: #22d3ee;
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
+  min-height: 100vh;
 }
 
 .container-page {
@@ -34,19 +39,26 @@ body {
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  @apply rounded-lg shadow-sm p-4;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.06);
+  @apply rounded-xl p-4 backdrop-blur;
 }
 
 .sidebar {
   background: var(--sidebar);
   border-right: 1px solid var(--sidebar-border);
-  @apply w-64 min-h-screen p-4;
+  @apply w-64 min-h-screen p-4 text-slate-100;
 }
 
 .sidebar a {
-  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100;
+  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800;
 }
 
 .sidebar .active {
-  @apply bg-slate-900 text-white;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  @apply text-white;
+}
+
+.gradient-header {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  @apply text-white rounded-xl p-4 shadow-lg;
 }
