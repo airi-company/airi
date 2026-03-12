@@ -38,6 +38,8 @@ export default function TasksPage() {
   const [ask, setAsk] = useState("Write Python code to create a Telegram bot.");
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<TaskItem | null>(null);
+  const [filterProject, setFilterProject] = useState<number | null>(null);
+  const [filterText, setFilterText] = useState<string>("");
 
   const refresh = async () => {
     try {
@@ -56,6 +58,13 @@ export default function TasksPage() {
     refresh();
   }, []);
 
+  // Đồng bộ filter project với form tạo task: nếu chọn filter project thì form mặc định project đó
+  useEffect(() => {
+    if (filterProject && projectId !== filterProject) {
+      setProjectId(filterProject);
+    }
+  }, [filterProject]);
+
   const submit = async () => {
     try {
       await apiPost("/tasks", { type, assignee, project_id: projectId, payload: { ask } });
@@ -66,15 +75,27 @@ export default function TasksPage() {
     }
   };
 
+  const filteredTasks = useMemo(() => {
+    const text = filterText.toLowerCase();
+    return tasks.filter((t) => {
+      if (filterProject && t.project_id !== filterProject) return false;
+      if (text) {
+        const blob = [t.type, t.assignee, t.agent, JSON.stringify(t.payload), JSON.stringify(t.result)].join(" ").toLowerCase();
+        if (!blob.includes(text)) return false;
+      }
+      return true;
+    });
+  }, [tasks, filterProject, filterText]);
+
   const groupedByProject = useMemo(() => {
     const projMap: Record<string, TaskItem[]> = {};
-    tasks.forEach((t) => {
+    filteredTasks.forEach((t) => {
       const pid = t.project_id ? String(t.project_id) : "none";
       if (!projMap[pid]) projMap[pid] = [];
       projMap[pid].push(t);
     });
     return projMap;
-  }, [tasks]);
+  }, [filteredTasks]);
 
   const statuses = (list: TaskItem[]) => {
     const g: Record<string, TaskItem[]> = { queued: [], running: [], done: [], error: [] };
@@ -105,15 +126,44 @@ export default function TasksPage() {
 
   return (
     <div className="container-page space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Task board</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Task board</h1>
+          <p className="text-slate-500 text-sm">Nhóm theo project, filter chung cho tạo & quản lý task.</p>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={refresh}>Refresh</Button>
         </div>
       </div>
       {error && <div className="text-red-600 text-sm">{error}</div>}
 
-      <div className="card space-y-3">
+      <div className="card space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="text-sm text-slate-600">Filter project</label>
+            <select
+              className="w-full border rounded px-3 py-2"
+              value={filterProject ?? ""}
+              onChange={(e) => setFilterProject(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">(All projects)</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+              <option value="none">(No project)</option>
+            </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-sm text-slate-600">Filter text</label>
+            <input
+              className="w-full border rounded px-3 py-2"
+              placeholder="Search type/assignee/payload..."
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="font-semibold">Create task</div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
@@ -156,13 +206,14 @@ export default function TasksPage() {
             </select>
           </div>
           <div className="sm:col-span-3">
-            <label className="text-sm text-slate-600">Prompt / details</label>
+            <label className="text-sm text-slate-600">Prompt / code / details</label>
             <textarea
               className="w-full border rounded px-3 py-2"
               rows={3}
               value={ask}
               onChange={(e) => setAsk(e.target.value)}
             />
+            <p className="text-xs text-slate-500 mt-1">Nếu là task coding và bạn dán toàn bộ HTML/JS vào đây, hệ thống sẽ ghi file index.html và push lên repo của project (branch).</p>
           </div>
         </div>
         <Button onClick={submit}>Create task</Button>
