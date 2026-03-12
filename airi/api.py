@@ -154,6 +154,7 @@ def _add_project(project: ProjectCreate) -> Dict:
 
 
 _init_agents()
+db.init_db()
 app = FastAPI(title="Airi Company API")
 app.add_middleware(
     CORSMiddleware,
@@ -239,12 +240,17 @@ def list_memory():
 @app.get("/dashboard")
 def dashboard():
     running = len([a for a in agents.values() if a["status"] == "running"])
+    projects_count = 0
+    try:
+        projects_count = len(db.list_projects())
+    except Exception as e:
+        _append_log(f"dashboard projects error: {e}")
     return {
         "agents": running,
         "tasks_in_queue": len(queue.tasks),
         "llm_usage": llm_usage,
         "logs": logs[-20:],
-        "projects": len(db.list_projects()),
+        "projects": projects_count,
     }
 
 
