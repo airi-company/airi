@@ -12,6 +12,7 @@ interface TaskItem {
   result?: any;
   agent?: string;
   project_id?: number | null;
+  created_at?: string | null;
 }
 
 interface ProjectItem {
@@ -78,8 +79,13 @@ export default function TasksPage() {
 
   return (
     <div className="container-page space-y-4">
-      <h1 className="text-2xl font-semibold">Task board</h1>
-      {error && <div className="text-red-600">{error}</div>}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Task board</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={refresh}>Refresh</Button>
+        </div>
+      </div>
+      {error && <div className="text-red-600 text-sm">{error}</div>}
 
       <div className="card space-y-3">
         <div className="font-semibold">Create task</div>
@@ -142,12 +148,14 @@ export default function TasksPage() {
             <div className="font-semibold">{col.title}</div>
             <div className="space-y-2 text-sm">
               {(grouped[col.key] ?? []).map((t) => (
-                <div key={t.id} className="border rounded px-3 py-2 bg-slate-50">
+                <div key={t.id} className="border rounded px-3 py-2 bg-white shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">#{t.id} • {t.type}</div>
+                    <span className="text-xs px-2 py-1 rounded bg-slate-200 text-slate-700">{t.status ?? "?"}</span>
                   </div>
                   <div className="text-slate-600">Agent: {t.assignee ?? t.agent ?? "-"}</div>
                   <div className="text-slate-600">Project: {projectName(t.project_id)}</div>
+                  {t.created_at && <div className="text-xs text-slate-500">{new Date(t.created_at).toLocaleString()}</div>}
                   <div className="text-slate-700">Payload: {JSON.stringify(t.payload)}</div>
                   {t.result && <div className="text-slate-700">Result: {JSON.stringify(t.result)}</div>}
                 </div>

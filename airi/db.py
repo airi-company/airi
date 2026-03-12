@@ -64,7 +64,7 @@ def create_task(type_: str, assignee: Optional[str], payload: Dict[str, Any], pr
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO tasks (type, assignee, payload, status, agent, project_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, type, assignee, payload, status, result, agent, project_id",
+                "INSERT INTO tasks (type, assignee, payload, status, agent, project_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, type, assignee, payload, status, result, agent, project_id, created_at",
                 (type_, assignee, json.dumps(payload), "queued", assignee or (type_.capitalize()), project_id),
             )
             row = cur.fetchone()
@@ -85,7 +85,7 @@ def update_task_status(task_id: int, status: str, result: Optional[Any] = None):
 def list_tasks() -> List[Dict]:
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, type, assignee, payload, status, result, agent, project_id FROM tasks ORDER BY id DESC")
+            cur.execute("SELECT id, type, assignee, payload, status, result, agent, project_id, created_at FROM tasks ORDER BY id DESC")
             return [_task_row(r) for r in cur.fetchall()]
 
 
@@ -99,6 +99,7 @@ def _task_row(row: Tuple) -> Dict:
         "result": row[5],
         "agent": row[6],
         "project_id": row[7],
+        "created_at": row[8].isoformat() if row[8] else None,
     }
 
 
