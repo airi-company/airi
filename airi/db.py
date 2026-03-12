@@ -23,6 +23,7 @@ def init_db():
                     description TEXT,
                     status TEXT DEFAULT 'active',
                     repo_url TEXT,
+                    demo_url TEXT,
                     created_at TIMESTAMPTZ DEFAULT NOW()
                 );
                 CREATE TABLE IF NOT EXISTS tasks (
@@ -41,12 +42,12 @@ def init_db():
             conn.commit()
 
 
-def create_project(name: str, description: str = "", status: str = "active", repo_url: Optional[str] = None) -> Dict:
+def create_project(name: str, description: str = "", status: str = "active", repo_url: Optional[str] = None, demo_url: Optional[str] = None) -> Dict:
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO projects (name, description, status, repo_url) VALUES (%s, %s, %s, %s) RETURNING id, name, description, status, repo_url",
-                (name, description, status, repo_url),
+                "INSERT INTO projects (name, description, status, repo_url, demo_url) VALUES (%s, %s, %s, %s, %s) RETURNING id, name, description, status, repo_url, demo_url",
+                (name, description, status, repo_url, demo_url),
             )
             row = cur.fetchone()
             conn.commit()
@@ -56,7 +57,7 @@ def create_project(name: str, description: str = "", status: str = "active", rep
 def list_projects() -> List[Dict]:
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, name, description, status, repo_url FROM projects ORDER BY id DESC")
+            cur.execute("SELECT id, name, description, status, repo_url, demo_url FROM projects ORDER BY id DESC")
             return [_project_row(r) for r in cur.fetchall()]
 
 
@@ -110,4 +111,5 @@ def _project_row(row: Tuple) -> Dict:
         "description": row[2],
         "status": row[3],
         "repo_url": row[4],
+        "demo_url": row[5],
     }

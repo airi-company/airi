@@ -9,6 +9,7 @@ interface ProjectItem {
   description?: string;
   status?: string;
   repo_url?: string | null;
+  demo_url?: string | null;
 }
 
 export default function ProjectsPage() {
@@ -72,9 +73,9 @@ export default function ProjectsPage() {
             <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{p.description}</div>
             <div className="flex flex-wrap gap-2 items-center">
               {p.repo_url && <a className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-500" href={p.repo_url} target="_blank" rel="noreferrer">🔗 Repo</a>}
-              {p.name.toLowerCase().includes("phú quý") || p.name.toLowerCase().includes("phu quy") ? (
-                <a className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-500" href="/phuquy" target="_blank" rel="noreferrer">🎯 Demo</a>
-              ) : null}
+              {p.demo_url && (
+                <a className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-500" href={p.demo_url} target="_blank" rel="noreferrer">🎯 Demo</a>
+              )}
             </div>
             <div className="text-xs text-slate-500">ID: {p.id}</div>
           </div>

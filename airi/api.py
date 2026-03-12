@@ -54,13 +54,11 @@ class ProjectCreate(BaseModel):
     description: Optional[str] = ""
     status: Optional[str] = "active"
     create_repo: bool = True
+    demo_url: Optional[str] = None
 
 
 class AgentControl(BaseModel):
     name: str
-
-
-agents: Dict[str, Dict] = {}
 
 
 def _init_agents():
@@ -154,7 +152,7 @@ def _create_repo(project_name: str) -> Optional[str]:
 
 def _add_project(project: ProjectCreate) -> Dict:
     repo_url = _create_repo(project.name) if project.create_repo else None
-    rec = db.create_project(project.name, project.description or "", project.status or "active", repo_url)
+    rec = db.create_project(project.name, project.description or "", project.status or "active", repo_url, project.demo_url)
     return rec
 
 
