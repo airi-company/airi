@@ -20,6 +20,7 @@ from airi.agents.analyst import AnalystAgent
 from airi.agents.support import SupportAgent
 from airi.tools.llm.router import ask_llm
 from airi import db
+from airi import deploy
 
 # Global state
 queue = TaskQueue()
@@ -55,6 +56,7 @@ class ProjectCreate(BaseModel):
     status: Optional[str] = "active"
     create_repo: bool = True
     demo_url: Optional[str] = None
+    branch: Optional[str] = "main"
 
 
 class AgentControl(BaseModel):
@@ -95,6 +97,27 @@ def _mark_task(task_id: int, status: str, result=None):
             return
 
 
+def _auto_deploy(task: Task, task_id: int):
+    if task.type != "coding":
+        return
+    if not task.project_id:
+        return
+    proj = db.get_project(task.project_id)
+    if not proj or not proj.get("repo_url"):
+        return
+    repo = proj["repo_url"]
+    branch = proj.get("branch") or "main"
+    # Expect payload contains code/html
+    content = task.payload.get("code") or task.payload.get("html")
+    if not content:
+        return
+    try:
+        deploy.deploy_static(repo, branch, content, filename="index.html")
+    except Exception as e:
+        _append_log(f"auto deploy failed for task {task_id}: {e}")
+        return
+
+
 def _process_queue():
     global llm_usage
     while True:
@@ -120,6 +143,7 @@ def _process_queue():
                 for t in new_tasks:
                     _add_task_record(t)
             _mark_task(task_id, "done", result=task.payload)
+            _auto_deploy(task, task_id)
         except Exception as e:
             _append_log(f"[{agent.config.name}] error: {e}")
             _mark_task(task_id, "error", result=str(e))
@@ -152,7 +176,7 @@ def _create_repo(project_name: str) -> Optional[str]:
 
 def _add_project(project: ProjectCreate) -> Dict:
     repo_url = _create_repo(project.name) if project.create_repo else None
-    rec = db.create_project(project.name, project.description or "", project.status or "active", repo_url, project.demo_url)
+    rec = db.create_project(project.name, project.description or "", project.status or "active", repo_url, project.demo_url, project.branch or "main")
     return rec
 
 
