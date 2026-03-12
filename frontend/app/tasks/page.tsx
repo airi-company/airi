@@ -37,6 +37,7 @@ export default function TasksPage() {
   const [projectId, setProjectId] = useState<number | null>(null);
   const [ask, setAsk] = useState("Write Python code to create a Telegram bot.");
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<TaskItem | null>(null);
 
   const refresh = async () => {
     try {
@@ -76,9 +77,24 @@ export default function TasksPage() {
   }, [tasks]);
 
   const projectName = (id?: number | null) => projects.find((p) => p.id === id)?.name || "-";
+  const pretty = (v: any) => {
+    try {
+      return JSON.stringify(v, null, 2);
+    } catch {
+      return String(v);
+    }
+  };
+
+  const statusClass = (s?: string) => {
+    const base = "text-xs px-2 py-1 rounded-full";
+    if (s === "done") return `${base} bg-green-100 text-green-700`;
+    if (s === "running") return `${base} bg-blue-100 text-blue-700`;
+    if (s === "error") return `${base} bg-red-100 text-red-700`;
+    return `${base} bg-slate-100 text-slate-700`;
+  };
 
   return (
-    <div className="container-page space-y-4">
+    <div className="container-page space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Task board</h1>
         <div className="flex gap-2">
@@ -148,17 +164,21 @@ export default function TasksPage() {
             <div className="font-semibold">{col.title}</div>
             <div className="space-y-2 text-sm">
               {(grouped[col.key] ?? []).map((t) => (
-                <div key={t.id} className="border rounded px-3 py-2 bg-white shadow-sm">
+                <button
+                  key={t.id}
+                  className="w-full text-left border rounded px-3 py-2 bg-white shadow-sm hover:shadow-md transition"
+                  onClick={() => setSelected(t)}
+                >
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">#{t.id} • {t.type}</div>
-                    <span className="text-xs px-2 py-1 rounded bg-slate-200 text-slate-700">{t.status ?? "?"}</span>
+                    <span className={statusClass(t.status)}>{t.status ?? "?"}</span>
                   </div>
                   <div className="text-slate-600">Agent: {t.assignee ?? t.agent ?? "-"}</div>
                   <div className="text-slate-600">Project: {projectName(t.project_id)}</div>
                   {t.created_at && <div className="text-xs text-slate-500">{new Date(t.created_at).toLocaleString()}</div>}
-                  <div className="text-slate-700">Payload: {JSON.stringify(t.payload)}</div>
-                  {t.result && <div className="text-slate-700">Result: {JSON.stringify(t.result)}</div>}
-                </div>
+                  <div className="text-slate-700 truncate">Payload: {JSON.stringify(t.payload)}</div>
+                  {t.result && <div className="text-slate-700 truncate">Result: {JSON.stringify(t.result)}</div>}
+                </button>
               ))}
               {(grouped[col.key] ?? []).length === 0 && (
                 <div className="text-slate-500">No tasks</div>
@@ -167,6 +187,33 @@ export default function TasksPage() {
           </div>
         ))}
       </div>
+
+      {selected && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setSelected(null)}>
+          <div className="bg-white dark:bg-slate-900 max-w-2xl w-full rounded-xl shadow-2xl p-6 space-y-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <div className="text-lg font-semibold">Task #{selected.id} • {selected.type}</div>
+              <span className={statusClass(selected.status)}>{selected.status ?? "?"}</span>
+            </div>
+            <div className="text-sm text-slate-600">Agent: {selected.assignee ?? selected.agent ?? "-"}</div>
+            <div className="text-sm text-slate-600">Project: {projectName(selected.project_id)}</div>
+            {selected.created_at && <div className="text-xs text-slate-500">{new Date(selected.created_at).toLocaleString()}</div>}
+            <div className="space-y-2">
+              <div className="text-sm font-semibold">Payload</div>
+              <pre className="bg-slate-100 dark:bg-slate-800 rounded p-3 text-xs whitespace-pre-wrap break-words">{pretty(selected.payload)}</pre>
+            </div>
+            {selected.result && (
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">Result</div>
+                <pre className="bg-slate-100 dark:bg-slate-800 rounded p-3 text-xs whitespace-pre-wrap break-words">{pretty(selected.result)}</pre>
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
