@@ -102,7 +102,12 @@ def _extract_code(payload: dict) -> Optional[str]:
         v = payload.get(k)
         if isinstance(v, str) and len(v.strip()) > 0:
             return v
-    return None
+    # fallback: push entire payload as json string so coding tasks always write something
+    try:
+        import json
+        return json.dumps(payload, ensure_ascii=False, indent=2)
+    except Exception:
+        return None
 
 
 def _auto_deploy(task: Task, task_id: int):
