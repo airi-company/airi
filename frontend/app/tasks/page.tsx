@@ -243,8 +243,7 @@ export default function TasksPage() {
                           </div>
                           <div className="text-slate-600">Agent: {t.assignee ?? t.agent ?? "-"}</div>
                           {t.created_at && <div className="text-xs text-slate-500">{new Date(t.created_at).toLocaleString()}</div>}
-                          <div className="text-slate-700 truncate">Payload: {JSON.stringify(t.payload)}</div>
-                          {t.result && <div className="text-slate-700 truncate">Result: {JSON.stringify(t.result)}</div>}
+                          <div className="text-xs text-slate-500">Click to view details</div>
                         </button>
                       ))}
                       {(byStatus[col.key] ?? []).length === 0 && (
