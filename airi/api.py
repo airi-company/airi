@@ -9,6 +9,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi import Body
 
 from airi.tasks.queue import TaskQueue
 from airi.tasks.types import Task, Message
@@ -53,6 +54,10 @@ class ProjectCreate(BaseModel):
     description: Optional[str] = ""
     status: Optional[str] = "active"
     create_repo: bool = True
+
+
+class AgentControl(BaseModel):
+    name: str
 
 
 agents: Dict[str, Dict] = {}
@@ -181,7 +186,8 @@ def get_agents():
 
 
 @app.post("/agents/start")
-def start_agent(name: str):
+def start_agent(payload: AgentControl = Body(...)):
+    name = payload.name
     if name not in agents:
         raise HTTPException(404, "agent not found")
     agents[name]["status"] = "running"
@@ -189,7 +195,8 @@ def start_agent(name: str):
 
 
 @app.post("/agents/stop")
-def stop_agent(name: str):
+def stop_agent(payload: AgentControl = Body(...)):
+    name = payload.name
     if name not in agents:
         raise HTTPException(404, "agent not found")
     agents[name]["status"] = "stopped"
