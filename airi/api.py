@@ -18,6 +18,7 @@ from airi.agents.marketing import MarketingAgent
 from airi.agents.analyst import AnalystAgent
 from airi.agents.support import SupportAgent
 from airi.tools.llm.router import ask_llm
+from airi import db
 
 # Global state
 queue = TaskQueue()
@@ -27,12 +28,8 @@ llm_usage: int = 0
 memory_dir = Path(__file__).resolve().parent.parent / "memory"
 memory_dir.mkdir(exist_ok=True)
 # task tracking
-_task_counter = 0
-# each: {id, type, assignee, payload, status, result, agent, output, project_id}
-tasks_state: List[Dict] = []
+tasks_state: List[Dict] = []  # kept only for in-process queue refs
 # projects
-_project_counter = 0
-projects: List[Dict] = []  # {id, name, description, status, repo_url}
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_ORG = os.environ.get("GITHUB_ORG", "airi-company")
 
@@ -80,23 +77,13 @@ def _append_log(msg: str):
 
 
 def _add_task_record(task: Task):
-    global _task_counter
-    _task_counter += 1
-    record = {
-        "id": _task_counter,
-        "type": task.type,
-        "assignee": task.assignee,
-        "payload": task.payload,
-        "status": "queued",
-        "result": None,
-        "agent": task.assignee or task.type.capitalize(),
-        "project_id": task.project_id,
-    }
-    tasks_state.append(record)
-    queue.add_task(_task_counter, task)
+    rec = db.create_task(task.type, task.assignee, task.payload, task.project_id)
+    tasks_state.append(rec)
+    queue.add_task(rec["id"], task)
 
 
 def _mark_task(task_id: int, status: str, result=None):
+    db.update_task_status(task_id, status, result)
     for t in tasks_state:
         if t["id"] == task_id:
             t["status"] = status
@@ -161,17 +148,8 @@ def _create_repo(project_name: str) -> Optional[str]:
 
 
 def _add_project(project: ProjectCreate) -> Dict:
-    global _project_counter
-    _project_counter += 1
     repo_url = _create_repo(project.name) if project.create_repo else None
-    rec = {
-        "id": _project_counter,
-        "name": project.name,
-        "description": project.description,
-        "status": project.status or "active",
-        "repo_url": repo_url,
-    }
-    projects.append(rec)
+    rec = db.create_project(project.name, project.description or "", project.status or "active", repo_url)
     return rec
 
 
@@ -219,7 +197,7 @@ def stop_agent(name: str):
 
 @app.get("/tasks")
 def get_tasks():
-    return tasks_state
+    return db.list_tasks()
 
 
 @app.post("/tasks")
@@ -231,7 +209,7 @@ def create_task(task: TaskCreate):
 
 @app.get("/projects")
 def get_projects():
-    return projects
+    return db.list_projects()
 
 
 @app.post("/projects")
@@ -266,7 +244,7 @@ def dashboard():
         "tasks_in_queue": len(queue.tasks),
         "llm_usage": llm_usage,
         "logs": logs[-20:],
-        "projects": len(projects),
+        "projects": len(db.list_projects()),
     }
 
 
