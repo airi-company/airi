@@ -190,8 +190,8 @@ export default function TasksPage() {
 
       {selected && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setSelected(null)}>
-          <div className="bg-white dark:bg-slate-900 max-w-2xl w-full rounded-xl shadow-2xl p-6 space-y-3" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 max-w-3xl w-full max-h-[80vh] overflow-y-auto rounded-xl shadow-2xl p-6 space-y-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="text-lg font-semibold">Task #{selected.id} • {selected.type}</div>
               <span className={statusClass(selected.status)}>{selected.status ?? "?"}</span>
             </div>
@@ -200,12 +200,12 @@ export default function TasksPage() {
             {selected.created_at && <div className="text-xs text-slate-500">{new Date(selected.created_at).toLocaleString()}</div>}
             <div className="space-y-2">
               <div className="text-sm font-semibold">Payload</div>
-              <pre className="bg-slate-100 dark:bg-slate-800 rounded p-3 text-xs whitespace-pre-wrap break-words">{pretty(selected.payload)}</pre>
+              <pre className="bg-slate-100 dark:bg-slate-800 rounded p-3 text-xs whitespace-pre-wrap break-words max-h-48 overflow-auto font-mono">{pretty(selected.payload)}</pre>
             </div>
             {selected.result && (
               <div className="space-y-2">
                 <div className="text-sm font-semibold">Result</div>
-                <pre className="bg-slate-100 dark:bg-slate-800 rounded p-3 text-xs whitespace-pre-wrap break-words">{pretty(selected.result)}</pre>
+                <pre className="bg-slate-100 dark:bg-slate-800 rounded p-3 text-xs whitespace-pre-wrap break-words max-h-48 overflow-auto font-mono">{pretty(selected.result)}</pre>
               </div>
             )}
             <div className="flex justify-end">
